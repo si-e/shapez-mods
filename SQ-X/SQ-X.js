@@ -1,6 +1,6 @@
 // @ts-nocheck
 const METADATA = {
-    website: "http://code.shapez.icu",
+    website: "https://github.com/si-e/shapez-mods",
     author: "梦想天生",
     name: "SQ-X",
     version: "__dev__",
@@ -37,6 +37,8 @@ R.reward_shape_swapper_and_rotater_180 = [R.reward_shape_swapper, R.reward_rotat
 const x_minerSpeedMultiplier = 2.5;
 const shape_swapper = "shape_swapper";
 const storageSize = 100;
+const PrioritizerComponentID = "Prioritizer";
+const MAX_ITEMS_IN_QUEUE = 3;
 
 // ############################
 
@@ -60,6 +62,12 @@ TRANSLATIONS["en"] = {
                 name: "X-Extractor",
                 description: "Place over a shape to extract it. The product will have special patterns."
             }
+        },
+        prioritizer: {
+            default: {
+                name: "Prioritizer",
+                description: "Prioritizes the bottom input."
+            },
         },
     },
     storyRewards: {
@@ -119,6 +127,12 @@ TRANSLATIONS["zh-CN"] = {
                 description: "放置在<strong>图形</strong>上进行开采。产物将呈现出特殊的纹路。"
             }
         },
+        prioritizer: {
+            default: {
+                name: "优先器",
+                description: "优先接收底部的输入。"
+            },
+        },
     },
     storyRewards: {
         reward_x_miner: {
@@ -153,9 +167,6 @@ class Mod extends $.Mod {
         this.registerSubShapeType({id: "X30", shortCode: "1"});
         this.registerSubShapeType({id: "X60", shortCode: "2"});
 
-        for (const Language in TRANSLATIONS) {
-            this.modInterface.registerTranslations(Language, TRANSLATIONS[Language]);
-        }
         for (const ClassName in STATIC_EXTENSION) {
             this.modInterface.extendObject($[ClassName], STATIC_EXTENSION[ClassName]);
         }
@@ -180,8 +191,8 @@ class Mod extends $.Mod {
                 $.MetaMinerBuilding,
                 $.enumMinerVariants.x_miner,
                 {
-                    name: T.buildings.miner.x_miner.name,
-                    description: T.buildings.miner.x_miner.description,
+                    name: "_X-miner",
+                    description: "_desc",
 
                     regularSpriteBase64: RESOURCES["building"]["x_miner.png"],
                     blueprintSpriteBase64: RESOURCES["blueprint"]["x_miner.png"],
@@ -228,8 +239,8 @@ class Mod extends $.Mod {
                 $.MetaVirtualProcessorBuilding,
                 $.enumVirtualProcessorVariants.shape_swapper,
                 {
-                    name: $.T.buildings.virtual_processor.shape_swapper.name,
-                    description: $.T.buildings.virtual_processor.shape_swapper.description,
+                    name: "_shape_swapper",
+                    description: "_desc",
 
                     tutorialImageBase64: RESOURCES["tutorial"]["virtual_processor-swapper.png"],
                     regularSpriteBase64: RESOURCES["building"]["virtual_processor-swapper.png"],
@@ -250,7 +261,26 @@ class Mod extends $.Mod {
             $.MOD_ITEM_PROCESSOR_HANDLERS.shape_swapper = process_SWAPPER;
         }
 
-        // 防止 registerNewBuilding 覆盖翻译，再注册一次
+        {  // 优先器
+            // getProcessorBaseSpeed
+            $.enumItemProcessorTypes.prioritizer = "prioritizer";
+            $.MOD_ITEM_PROCESSOR_SPEEDS[$.enumItemProcessorTypes.prioritizer] =
+                (root) => $.globalConfig.beltSpeedItemsPerSecond * root.hubGoals.upgradeImprovements.belt;
+
+            // Register the new building
+            this.modInterface.registerNewBuilding({
+                metaClass: MetaPrioritizerBuilding,
+                buildingIconBase64: RESOURCES["icon"]["prioritizer.png"],
+            });
+    
+            this.modInterface.registerComponent(PrioritizerComponent);
+            this.modInterface.registerGameSystem({
+                id: "prioritizer",
+                systemClass: PrioritizerSystem,
+                before: "end",
+            });
+        }
+
         for (const Language in TRANSLATIONS) {
             this.modInterface.registerTranslations(Language, TRANSLATIONS[Language]);
         }
@@ -298,6 +328,13 @@ const SIGNAL_FUNCTION = {
 // gameStarted: (root) => {
 // }
 // ,
+hudElementInitialized: (element) => {
+    if (element.constructor.name === "HUDBuildingsToolbar") {
+        // 加到次级工具栏最左边
+        element["secondaryBuildings"].unshift(MetaPrioritizerBuilding);
+    }
+}
+,
 gameLoadingStageEntered: (inGameState, stage) => {
     switch (stage) {
         case $.GAME_LOADING_STATES.s5_firstUpdate: {
@@ -2060,6 +2097,43 @@ HUDShapeViewer: ({ $super, $old }) => ({
     },
 })
 ,
+// 新系统：优先器 & 交换过滤器
+BeltPath: ({ $super, $old }) => ({
+    computePassOverFunctionWithoutBelts(entity, matchingSlotIndex) {
+        // do before
+        const systems = this.root.systemMgr.systems;
+        const prioritizerComp = entity.components[PrioritizerComponentID];
+        if (prioritizerComp) {
+            // It's a prioritizer
+            return function (item) {
+                if (systems.prioritizer.tryAcceptItem(entity, matchingSlotIndex, item)) {
+                    return true;
+                }
+            }
+        }
+
+        return $old.computePassOverFunctionWithoutBelts.bind(this)(entity, matchingSlotIndex);
+    },
+})
+,
+ItemEjectorSystem: ({ $super, $old }) => ({
+    tryPassOverItem(item, receiver, slotIndex) {
+        // do before
+        const systems = this.root.systemMgr.systems;
+        const prioritizerComp = receiver.components[PrioritizerComponentID];
+        if (prioritizerComp) {
+            // It's a prioritizer
+            if (systems.prioritizer.tryAcceptItem(receiver, slotIndex, item)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        return $old.tryPassOverItem.bind(this)(item, receiver, slotIndex);
+    },
+})
+,
 // // some
 // SomeClass: ({ $super, $old }) => ({
 //     someFunction() {},
@@ -2436,7 +2510,7 @@ function process_SWAPPER(payload) {  // 交换器: 处理
 
 // ############################
 
-// 实体交换器-类
+// 实体交换器-建筑类
 class MetaShapeSwapperBuilding extends $.ModMetaBuilding {
     constructor() {
         super(shape_swapper);
@@ -2526,6 +2600,211 @@ class MetaShapeSwapperBuilding extends $.ModMetaBuilding {
             })
         );
     }
+}
+
+// 优先器-建筑类
+class MetaPrioritizerBuilding extends $.ModMetaBuilding {
+    static getAllVariantCombinations() {
+        return [
+            {
+                variant: $.defaultBuildingVariant,
+                name: "_prioritizer",
+                description: "_desc",
+
+                regularImageBase64:   RESOURCES["building"]["prioritizer.png"],
+                blueprintImageBase64: RESOURCES["blueprint"]["prioritizer.png"],
+                tutorialImageBase64:  RESOURCES["tutorial"]["prioritizer.png"],
+            },
+        ];
+    }
+
+    constructor() {
+        super("prioritizer");
+    }
+
+    getSilhouetteColor() {
+        return "#191981";
+    }
+
+    getSpecialOverlayRenderMatrix(rotation, rotationVariant, variant, entity) {
+        return $.generateMatrixRotations([1,1,1, 0,1,0, 0,1,0])[rotation];
+    }
+    
+    getDimensions(variant = $.defaultBuildingVariant) {
+        return new Vector(1, 2);
+    }
+
+    /**
+     * @param {GameRoot} root
+     * @returns {Array<[string, string]>}
+     */
+    getAdditionalStatistics(root) {
+        const speed = root.hubGoals.getProcessorBaseSpeed($.enumItemProcessorTypes.prioritizer);
+        return [[T.ingame.buildingPlacement.infoTexts.speed, $.formatItemsPerSecond(speed)]];
+    }
+
+    /**
+     * @param {GameRoot} root
+     */
+    getIsUnlocked(root) {
+        return root.hubGoals.isRewardUnlocked($.enumHubGoalRewards.reward_prioritizer);
+    }
+
+    /**
+    * @param {GameRoot} root
+    */
+    getAvailableVariants(root) {
+        return [$.defaultBuildingVariant];
+    }
+
+    /**
+     * Creates the entity at the given location
+     * @param {Entity} entity
+     */
+    setupEntityComponents(entity) {
+        entity.addComponent(
+            new $.ItemAcceptorComponent({
+                slots: [
+                    // The first slot has prior
+                    { pos: new Vector(0, 1), direction: $.enumDirection.bottom },
+                    { pos: new Vector(0, 0), direction: $.enumDirection.left },
+                    { pos: new Vector(0, 0), direction: $.enumDirection.right },
+                ],
+            })
+        );
+
+        entity.addComponent(
+            new PrioritizerComponent()
+        );
+
+        entity.addComponent(
+            new $.ItemEjectorComponent({
+                slots: [
+                    { pos: new Vector(0, 0), direction: $.enumDirection.top },
+                ],
+            })
+        );
+    }
+}
+
+// 优先器-部件类
+class PrioritizerComponent extends $.Component {
+    static getId() {
+        return PrioritizerComponentID;
+    }
+
+    static getSchema() {
+        return {
+            pendingItems: $.types.array(
+                $.types.structured({
+                    item: $.typeItemSingleton,
+                    progress: $.types.ufloat,
+                })
+            ),
+        };
+    }
+
+    /**
+     * @param {object} param0
+     * @param {number=} param0.bufferSize How much this prioritizer can hold
+     */
+    constructor() {
+        super();
+
+        this.clear();
+    }
+
+    clear() {
+        /**
+         * Items in queue to leave through
+         * @type {Array<BaseItem>}
+         */
+        this.pendingItems = [];
+
+        /**
+         * @type {Array<BaseItem>}
+         */
+        this.secondaryItems = [];
+        this.secondaryBlocking = false;
+    }
+
+}
+
+// 优先器-系统类
+class PrioritizerSystem extends $.GameSystemWithFilter {
+    constructor(root) {
+        super(root, [PrioritizerComponent]);
+    }
+
+    update() {
+        const now = this.root.time.now();
+        for (let i = 0; i < this.allEntities.length; ++i) {
+            const entity = this.allEntities[i];
+
+            // Only one ouput slot "0"
+            const ejectorSlot = 0;
+            const ejectorComp = entity.components.ItemEjector;
+            
+            const prioritizerComp = entity.components[PrioritizerComponentID];
+            const pendingItems = prioritizerComp.pendingItems;
+            const secondaryItems = prioritizerComp.secondaryItems;
+
+            // Eject from prioritizer
+            if (pendingItems.length > 0) {
+                const { item, duration } = pendingItems[0];
+                // Check if it's ready to eject
+                if (now > duration) {
+                    if (ejectorComp.tryEject(ejectorSlot, item)) {
+                        pendingItems.shift();
+                    }
+                }
+            }
+
+            if (secondaryItems.length > 0) {
+                const item = secondaryItems[0];
+                if (ejectorComp.tryEject(ejectorSlot, item)) {
+                    secondaryItems.shift();
+                }
+            }
+            prioritizerComp.secondaryBlocking = (secondaryItems.length > 0);
+        }
+    }
+
+    /**
+     * Returns whether this prioritizer accept the item success
+     * @param {Entity} entity
+     * @param {number} slot
+     * @param {BaseItem} item
+     */
+    tryAcceptItem(entity, slot, item) {
+        // logger.log("PrioritizerComponent", ".canAcceptItem", "{", entity, ", ", slot, ", ", item, "}");
+        const prioritizerComp = entity.components[PrioritizerComponentID];
+
+        if (slot === 0) {  // Priority to receive items from input slot "0"
+            if (prioritizerComp.pendingItems.length >= MAX_ITEMS_IN_QUEUE) {
+                // Busy
+                return false;
+            }
+            // refer from "UndergroundBeltComponent.tryAcceptTunneledItem"
+            const beltSpeed = this.root.hubGoals.getBeltBaseSpeed();
+            const travelDuration = 1.5 / beltSpeed / $.globalConfig.itemSpacingOnBelts;
+            const now = this.root.time.now();
+
+            prioritizerComp.pendingItems.push({
+                item,
+                duration: now + travelDuration,
+            });
+        } else {  // Secondary slots
+            if (prioritizerComp.pendingItems.length > 0 || prioritizerComp.secondaryBlocking) {
+                // Busy
+                return false;
+            }
+            prioritizerComp.secondaryItems.push(item);
+        }
+
+        return true;
+    }
+
 }
 
 // ############################
