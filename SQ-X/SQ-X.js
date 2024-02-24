@@ -15,6 +15,8 @@ const $ = shapez;
 const T = $.T;
 const Vector = $.Vector;
 const globalConfig = $.globalConfig;
+const enumDirection = $.enumDirection;
+const defaultBuildingVariant = $.defaultBuildingVariant;
 
 const REDPRINT_SHAPE_KEY = "--2r2r2r2r2r2r";
 const BLUEPRINT_SHAPE_KEY_TMP = "RbRbRbRw";
@@ -38,7 +40,8 @@ const x_minerSpeedMultiplier = 2.5;
 const shape_swapper = "shape_swapper";
 const storageSize = 100;
 const PrioritizerComponentID = "Prioritizer";
-const MAX_ITEMS_IN_QUEUE = 3;
+const MAX_ITEMS_IN_QUEUE_PRIORITIZER = 3;
+const MAX_ITEMS_IN_QUEUE_FILTER = 2;
 
 // ############################
 
@@ -68,6 +71,12 @@ TRANSLATIONS["en"] = {
                 name: "Prioritizer",
                 description: "Prioritizes the bottom input."
             },
+        },
+        filter: {
+            swap_filter: {
+                name: "Swap Filter",
+                description: "Filter out non-swapable shapes."
+            }
         },
     },
     storyRewards: {
@@ -132,6 +141,12 @@ TRANSLATIONS["zh-CN"] = {
                 name: "优先器",
                 description: "优先接收底部的输入。"
             },
+        },
+        filter: {
+            swap_filter: {
+                name: "交换过滤器",
+                description: "过滤出不能交换的图形。"
+            }
         },
     },
     storyRewards: {
@@ -219,7 +234,9 @@ class Mod extends $.Mod {
             $.MODS_CAN_PROCESS[$.enumItemProcessorRequirements.shape_swapper] = canProcess_shape_swapper;
 
             $.enumItemProcessorTypes.shape_swapper = shape_swapper;
-            $.MOD_ITEM_PROCESSOR_SPEEDS[$.enumItemProcessorTypes.shape_swapper] = (root) => globalConfig.beltSpeedItemsPerSecond * root.hubGoals.upgradeImprovements.processors * 1/3;
+            $.MOD_ITEM_PROCESSOR_SPEEDS[$.enumItemProcessorTypes.shape_swapper] =
+                (root) => globalConfig.beltSpeedItemsPerSecond * root.hubGoals.upgradeImprovements.processors * 1/3;
+            $.MOD_ITEM_PROCESSOR_HANDLERS.shape_swapper = process_SWAPPER;
             // Register the new building
             this.modInterface.registerNewBuilding({
                 metaClass: MetaShapeSwapperBuilding,
@@ -257,10 +274,6 @@ class Mod extends $.Mod {
             $.enumLogicGateType.shape_swapper = shape_swapper;
         }
 
-        {  // 实体交换机-逻辑入口
-            $.MOD_ITEM_PROCESSOR_HANDLERS.shape_swapper = process_SWAPPER;
-        }
-
         {  // 优先器
             // getProcessorBaseSpeed
             $.enumItemProcessorTypes.prioritizer = "prioritizer";
@@ -279,6 +292,37 @@ class Mod extends $.Mod {
                 systemClass: PrioritizerSystem,
                 before: "end",
             });
+        }
+
+        {  // 交换过滤器
+            $.enumFilterVariants = {
+                swap_filter: "swap_filter",
+            };
+            this.modInterface.addVariantToExistingBuilding(
+                //@ts-ignore
+                $.MetaFilterBuilding,
+                $.enumFilterVariants.swap_filter,
+                {
+                    name: "_swap_filter",
+                    description: "_desc",
+
+                    regularSpriteBase64: RESOURCES["building"]["swap_filter.png"],
+                    blueprintSpriteBase64: RESOURCES["blueprint"]["swap_filter.png"],
+                    tutorialImageBase64: RESOURCES["tutorial"]["swap_filter.png"],
+
+                    dimensions: new Vector(1, 1),
+                    additionalStatistics(root) {
+                        return [[
+                                T.ingame.buildingPlacement.infoTexts.speed,
+                                $.formatItemsPerSecond(root.hubGoals.getBeltBaseSpeed()),
+                        ],];
+                    },
+
+                    isUnlocked(root) {
+                        return root.hubGoals.isRewardUnlocked(R.reward_swap_filter);
+                    },
+                }
+            );
         }
 
         for (const Language in TRANSLATIONS) {
@@ -1184,7 +1228,7 @@ MetaRotaterBuilding: ({ $super, $old }) => ({
     getAvailableVariants(root) {
         let variants = [];
         if (root.hubGoals.isRewardUnlocked(R.reward_rotater)) {
-            variants.push($.defaultBuildingVariant);
+            variants.push(defaultBuildingVariant);
         }
         if (root.hubGoals.isRewardUnlocked(R.reward_rotater_ccw)) {
             variants.push($.enumRotaterVariants.ccw);
@@ -1536,7 +1580,7 @@ WiredPinsSystem: ({ $super, $old }) => ({
     },
 })
 ,
-// 交付限制
+// 交付限制 & 交换过滤器
 ItemProcessorOverlaysSystem: ({ $super, $old }) => ({
     /**
      *
@@ -1581,6 +1625,12 @@ ItemProcessorOverlaysSystem: ({ $super, $old }) => ({
 
             // Draw filter overlays
             else if (filterComp) {
+                const variant = entity.components.StaticMapEntity.getVariant();
+                // add for skip to draw ConnectedSlot on swap_filter
+                if (variant === $.enumFilterVariants.swap_filter) {
+                    continue;
+                }
+                //
                 if (this.drawnUids.has(entity.uid)) {
                     continue;
                 }
@@ -1610,10 +1660,10 @@ ItemProcessorOverlaysSystem: ({ $super, $old }) => ({
                 
                 let bias;
                 switch (slot.direction) {
-                    case $.enumDirection.top: { bias = new $.Vector(0, -1); break; }
-                    case $.enumDirection.right: { bias = new $.Vector(1, 0); break; }
-                    case $.enumDirection.bottom: { bias = new $.Vector(0, 1); break; }
-                    case $.enumDirection.left: { bias = new $.Vector(-1, 0); break; }
+                    case enumDirection.top: { bias = new $.Vector(0, -1); break; }
+                    case enumDirection.right: { bias = new $.Vector(1, 0); break; }
+                    case enumDirection.bottom: { bias = new $.Vector(0, 1); break; }
+                    case enumDirection.left: { bias = new $.Vector(-1, 0); break; }
                 }
 
                 const pulse = $.smoothPulse(this.root.time.now());
@@ -1811,22 +1861,22 @@ MetaVirtualProcessorBuilding: ({ $super, $old }) => ({
             pinComp.setSlots([
                 {
                     pos: new Vector(0, 0),
-                    direction: $.enumDirection.top,
+                    direction: enumDirection.top,
                     type: $.enumPinSlotType.logicalEjector,
                 },
                 {
                     pos: new Vector(0, 0),
-                    direction: $.enumDirection.bottom,
+                    direction: enumDirection.bottom,
                     type: $.enumPinSlotType.logicalAcceptor,
                 },
                 {
                     pos: new Vector(1, 0),
-                    direction: $.enumDirection.top,
+                    direction: enumDirection.top,
                     type: $.enumPinSlotType.logicalEjector,
                 },
                 {
                     pos: new Vector(1, 0),
-                    direction: $.enumDirection.bottom,
+                    direction: enumDirection.bottom,
                     type: $.enumPinSlotType.logicalAcceptor,
                 },
             ]);
@@ -1935,59 +1985,9 @@ MetaStorageBuilding: ({ $super, $old }) => ({
         return [[T.ingame.buildingPlacement.infoTexts.storage, $.formatBigNumber(storageSize)]];
     },
     setupEntityComponents(entity) {
-        // Required, since the item processor needs this.
-        entity.addComponent(
-            new $.ItemEjectorComponent({
-                slots: [
-                    {
-                        pos: new Vector(0, 0),
-                        direction: $.enumDirection.top,
-                    },
-                    {
-                        pos: new Vector(1, 0),
-                        direction: $.enumDirection.top,
-                    },
-                ],
-            })
-        );
-
-        entity.addComponent(
-            new $.ItemAcceptorComponent({
-                slots: [
-                    {
-                        pos: new Vector(0, 1),
-                        direction: $.enumDirection.bottom,
-                    },
-                    {
-                        pos: new Vector(1, 1),
-                        direction: $.enumDirection.bottom,
-                    },
-                ],
-            })
-        );
-
-        entity.addComponent(
-            new $.StorageComponent({
-                maximumStorage: storageSize,
-            })
-        );
-
-        entity.addComponent(
-            new $.WiredPinsComponent({
-                slots: [
-                    {
-                        pos: new Vector(1, 1),
-                        direction: $.enumDirection.right,
-                        type: $.enumPinSlotType.logicalEjector,
-                    },
-                    {
-                        pos: new Vector(0, 1),
-                        direction: $.enumDirection.left,
-                        type: $.enumPinSlotType.logicalEjector,
-                    },
-                ],
-            })
-        );
+        $old.setupEntityComponents.bind(this)(entity);
+        // do after, chang maximumStorage
+        entity.components.Storage.maximumStorage = storageSize;
     }
 })
 ,
@@ -2028,7 +2028,7 @@ HUDBlueprintPlacer: ({ $super, $old }) => ({
 // 四染去除
 MetaPainterBuilding: ({ $super, $old }) => ({
     getAvailableVariants(root) {
-        let variants = [$.defaultBuildingVariant, $.enumPainterVariants.mirrored];
+        let variants = [defaultBuildingVariant, $.enumPainterVariants.mirrored];
         if (root.hubGoals.isRewardUnlocked(R.reward_painter_double)) {
             variants.push($.enumPainterVariants.double);
         }
@@ -2097,7 +2097,7 @@ HUDShapeViewer: ({ $super, $old }) => ({
     },
 })
 ,
-// 新系统：优先器 & 交换过滤器
+// 优先器-接收入口
 BeltPath: ({ $super, $old }) => ({
     computePassOverFunctionWithoutBelts(entity, matchingSlotIndex) {
         // do before
@@ -2132,6 +2132,100 @@ ItemEjectorSystem: ({ $super, $old }) => ({
 
         return $old.tryPassOverItem.bind(this)(item, receiver, slotIndex);
     },
+})
+,
+// 交换过滤器
+MetaFilterBuilding: ({ $super, $old }) => ({
+    getSpecialOverlayRenderMatrix(rotation, rotationVariant, variant, entity) {
+        if (variant === $.enumFilterVariants.swap_filter) {
+            return $.generateMatrixRotations([1, 0, 1, 1, 1, 1, 1, 1, 1])[rotation];
+        } else {
+            return $old.getSpecialOverlayRenderMatrix.bind(this)(rotation, rotationVariant, variant, entity);
+        }
+    },
+
+    setupEntityComponents(entity) {
+        entity.addComponent(new $.WiredPinsComponent({ slots: [] }));
+        entity.addComponent(new $.ItemAcceptorComponent({ slots: [] }));
+        entity.addComponent(new $.ItemEjectorComponent({ slots: [] }));
+        entity.addComponent(new $.FilterComponent());
+    },
+
+    updateVariants(entity, rotationVariant, variant) {
+        switch (variant) {
+            case defaultBuildingVariant: {
+                entity.components.WiredPins.setSlots([
+                    { pos: new Vector(0, 0),  direction: enumDirection.left, type: $.enumPinSlotType.logicalAcceptor, },
+                ]);
+                entity.components.ItemAcceptor.setSlots([
+                    { pos: new Vector(0, 0), direction: enumDirection.bottom, },
+                ]);
+                entity.components.ItemEjector.setSlots([
+                    { pos: new Vector(0, 0), direction: enumDirection.top, },
+                    { pos: new Vector(1, 0), direction: enumDirection.right, },
+                ]);
+                break;
+            }
+            case $.enumFilterVariants.swap_filter: {
+                entity.components.WiredPins.setSlots([]);
+                entity.components.ItemAcceptor.setSlots([
+                    { pos: new Vector(0, 0), direction: enumDirection.bottom, },
+                    { pos: new Vector(0, 0), direction: enumDirection.left, },
+                ]);
+                entity.components.ItemEjector.setSlots([
+                    { pos: new Vector(0, 0), direction: enumDirection.top, },
+                    { pos: new Vector(0, 0), direction: enumDirection.right, },
+                ]);
+                break;
+            }
+            default:
+                assert(false, "Unknown filter variant: " + variant);
+        };
+    },
+})
+,
+FilterSystem: ({ $super, $old }) => ({
+    tryAcceptItem(entity, slot, item) {
+        const variant = entity.components.StaticMapEntity.getVariant();
+        if (variant === $.enumFilterVariants.swap_filter) {
+            return this._tryAcceptItem_swap_filter(entity, slot, item);
+        } else {
+            return $old.tryAcceptItem.bind(this)(entity, slot, item);
+        }
+    },
+
+    _tryAcceptItem_swap_filter(entity, slot, item) {
+        const filterComp = entity.components.Filter;
+        // assert(filterComp, "entity is no filter");
+
+        // Figure out which list we have to check
+        let listToCheck;
+        if (slot === 0) {
+            // MAIN SLOT
+            if (item.getItemType() === "shape" &&
+                    this.root.shapeDefinitionMgr.canCutHalf &&
+                    this.root.shapeDefinitionMgr.canCutHalf(/** @type {ShapeItem} */ (item).definition) ) {
+                listToCheck = filterComp.pendingItemsToLeaveThrough;
+            } else {
+                listToCheck = filterComp.pendingItemsToReject;
+            }
+        } else {
+            // SECONDARY SLOT
+            listToCheck = filterComp.pendingItemsToReject;
+        }
+
+        if (listToCheck.length >= MAX_ITEMS_IN_QUEUE_FILTER) {
+            // Busy
+            return false;
+        }
+
+        // Actually accept item
+        listToCheck.push({
+            item,
+            progress: 0.0,
+        });
+        return true;
+    }
 })
 ,
 // // some
@@ -2537,7 +2631,7 @@ class MetaShapeSwapperBuilding extends $.ModMetaBuilding {
         return $.generateMatrixRotations([1, 0, 1, 1, 1, 1, 1, 1, 1])[rotation];
     }
     
-    getDimensions(variant = $.defaultBuildingVariant) {
+    getDimensions(variant = defaultBuildingVariant) {
         return new Vector(2, 1);
     }
 
@@ -2565,16 +2659,8 @@ class MetaShapeSwapperBuilding extends $.ModMetaBuilding {
         entity.addComponent(
             new $.ItemAcceptorComponent({
                 slots: [
-                    {
-                        pos: new Vector(0, 0),
-                        direction: $.enumDirection.bottom,
-                        filter: "shape",
-                    },
-                    {
-                        pos: new Vector(1, 0),
-                        direction: $.enumDirection.bottom,
-                        filter: "shape",
-                    },
+                    { pos: new Vector(0, 0), direction: enumDirection.bottom, filter: "shape", },
+                    { pos: new Vector(1, 0), direction: enumDirection.bottom, filter: "shape", },
                 ],
             })
         );
@@ -2588,14 +2674,8 @@ class MetaShapeSwapperBuilding extends $.ModMetaBuilding {
         entity.addComponent(
             new $.ItemEjectorComponent({
                 slots: [
-                    { 
-                        pos: new Vector(0, 0), 
-                        direction: $.enumDirection.top
-                    },
-                    { 
-                        pos: new Vector(1, 0), 
-                        direction: $.enumDirection.top
-                    }
+                    { pos: new Vector(0, 0), direction: enumDirection.top },
+                    { pos: new Vector(1, 0), direction: enumDirection.top },
                 ],
             })
         );
@@ -2607,7 +2687,7 @@ class MetaPrioritizerBuilding extends $.ModMetaBuilding {
     static getAllVariantCombinations() {
         return [
             {
-                variant: $.defaultBuildingVariant,
+                variant: defaultBuildingVariant,
                 name: "_prioritizer",
                 description: "_desc",
 
@@ -2630,7 +2710,7 @@ class MetaPrioritizerBuilding extends $.ModMetaBuilding {
         return $.generateMatrixRotations([1,1,1, 0,1,0, 0,1,0])[rotation];
     }
     
-    getDimensions(variant = $.defaultBuildingVariant) {
+    getDimensions(variant = defaultBuildingVariant) {
         return new Vector(1, 2);
     }
 
@@ -2654,7 +2734,7 @@ class MetaPrioritizerBuilding extends $.ModMetaBuilding {
     * @param {GameRoot} root
     */
     getAvailableVariants(root) {
-        return [$.defaultBuildingVariant];
+        return [defaultBuildingVariant];
     }
 
     /**
@@ -2666,9 +2746,9 @@ class MetaPrioritizerBuilding extends $.ModMetaBuilding {
             new $.ItemAcceptorComponent({
                 slots: [
                     // The first slot has prior
-                    { pos: new Vector(0, 1), direction: $.enumDirection.bottom },
-                    { pos: new Vector(0, 0), direction: $.enumDirection.left },
-                    { pos: new Vector(0, 0), direction: $.enumDirection.right },
+                    { pos: new Vector(0, 1), direction: enumDirection.bottom },
+                    { pos: new Vector(0, 0), direction: enumDirection.left },
+                    { pos: new Vector(0, 0), direction: enumDirection.right },
                 ],
             })
         );
@@ -2680,7 +2760,7 @@ class MetaPrioritizerBuilding extends $.ModMetaBuilding {
         entity.addComponent(
             new $.ItemEjectorComponent({
                 slots: [
-                    { pos: new Vector(0, 0), direction: $.enumDirection.top },
+                    { pos: new Vector(0, 0), direction: enumDirection.top },
                 ],
             })
         );
@@ -2698,7 +2778,7 @@ class PrioritizerComponent extends $.Component {
             pendingItems: $.types.array(
                 $.types.structured({
                     item: $.typeItemSingleton,
-                    progress: $.types.ufloat,
+                    duration: $.types.float,
                 })
             ),
         };
@@ -2781,7 +2861,7 @@ class PrioritizerSystem extends $.GameSystemWithFilter {
         const prioritizerComp = entity.components[PrioritizerComponentID];
 
         if (slot === 0) {  // Priority to receive items from input slot "0"
-            if (prioritizerComp.pendingItems.length >= MAX_ITEMS_IN_QUEUE) {
+            if (prioritizerComp.pendingItems.length >= MAX_ITEMS_IN_QUEUE_PRIORITIZER) {
                 // Busy
                 return false;
             }
