@@ -11,6 +11,7 @@ const METADATA = {
 
 // ############################
 
+// alias
 const $ = shapez;
 const T = $.T;
 const Vector = $.Vector;
@@ -18,24 +19,28 @@ const globalConfig = $.globalConfig;
 const enumDirection = $.enumDirection;
 const defaultBuildingVariant = $.defaultBuildingVariant;
 
+// shape shortkey
 const REDPRINT_SHAPE_KEY = "--2r2r2r2r2r2r";
 const BLUEPRINT_SHAPE_KEY_TMP = "RbRbRbRw";
 const BLUEPRINT_SHAPE_KEY = "1b1b1b1b1b1b1b1b1b1b2b";
-// 3:5:4
 const m1 = "--1g1g2g1g1g2g1g1g2y";
 const m2 = "--1g2p2g2p1g2p2p";
 const m3 = "2w1u1w2w2r2w1w1u";
 
+// new reward
 const R = $.enumHubGoalRewards;
 R.reward_x_miner = "reward_x_miner";
 R.reward_redprints = "reward_redprints";
 R.reward_x_blueprints = "reward_x_blueprints";
 R.reward_shape_swapper = "reward_shape_swapper";
+R.reward_prioritizer = "reward_prioritizer";
+R.reward_filter_swap = "reward_filter_swap";
 R.reward_levers_and_filter = [R.reward_wires_painter_and_levers, R.reward_filter];
 R.reward_balancer_and_tunnel = [R.reward_balancer, R.reward_tunnel];
 R.reward_belt_reader_and_display = [R.reward_belt_reader, R.reward_display];
 R.reward_shape_swapper_and_rotater_180 = [R.reward_shape_swapper, R.reward_rotater_180];
 
+// constant
 const x_minerSpeedMultiplier = 2.5;
 const shape_swapper = "shape_swapper";
 const storageSize = 100;
@@ -2151,6 +2156,13 @@ MetaFilterBuilding: ({ $super, $old }) => ({
         entity.addComponent(new $.FilterComponent());
     },
 
+    getAvailableVariants(root) {
+        if (root.hubGoals.isRewardUnlocked(R.reward_filter_swap)) {
+            return [defaultBuildingVariant, $.enumFilterVariants.swap_filter];
+        }
+        return [defaultBuildingVariant];
+    },
+
     updateVariants(entity, rotationVariant, variant) {
         switch (variant) {
             case defaultBuildingVariant: {
@@ -2303,7 +2315,7 @@ function getLevels() {  // 关卡
     {
         shape: "1w1w2w2w2w2w1w1w",
         required: 1200,
-        reward: R.no_reward,
+        reward: R.reward_prioritizer,
     },
     // 12 红图 6
     {
@@ -2334,13 +2346,13 @@ function getLevels() {  // 关卡
     {
         shape: "1y2y1r2r1r2r1r2y",
         required: 8000,
-        reward: R.no_reward,
+        reward: R.reward_constant_signal,
     },
     // 16  2
     {
         shape: "1w1w1w1w2p1p1p1p2p1w",
         required: 10000,
-        reward: R.reward_constant_signal,
+        reward: R.no_reward,
     },
     // 17 衣 4
     {
@@ -2371,7 +2383,7 @@ function getLevels() {  // 关卡
     {
         shape: "--1g2p2g2p1g2p2p",
         required: 18000,
-        reward: R.no_reward,
+        reward: R.reward_filter_swap,
     },
     // 23 火箭 4
     {
@@ -2727,7 +2739,7 @@ class MetaPrioritizerBuilding extends $.ModMetaBuilding {
      * @param {GameRoot} root
      */
     getIsUnlocked(root) {
-        return root.hubGoals.isRewardUnlocked($.enumHubGoalRewards.reward_prioritizer);
+        return root.hubGoals.isRewardUnlocked(R.reward_prioritizer);
     }
 
     /**
