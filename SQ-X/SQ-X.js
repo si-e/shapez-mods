@@ -23,9 +23,9 @@ const defaultBuildingVariant = $.defaultBuildingVariant;
 const REDPRINT_SHAPE_KEY = "--2r2r2r2r2r2r";
 const BLUEPRINT_SHAPE_KEY_TMP = "RbRbRbRw";
 const BLUEPRINT_SHAPE_KEY = "1b1b1b1b1b1b1b1b1b1b2b";
-const m1 = "--1g1g2g1g1g2g1g1g2y";
-const m2 = "--1g2p2g2p1g2p2p";
-const m3 = "2w1u1w2w2r2w1w1u";
+const m1 = "1w2u1w2w2u2u2w";
+const m2 = "1w2b1w1w1w1w2r1w1w1w";
+const m3 = "--1g2p2g2p1g2p2p";
 
 // new reward
 const R = $.enumHubGoalRewards;
@@ -37,7 +37,6 @@ R.reward_prioritizer = "reward_prioritizer";
 R.reward_filter_swap = "reward_filter_swap";
 R.reward_levers_and_filter = [R.reward_wires_painter_and_levers, R.reward_filter];
 R.reward_balancer_and_tunnel = [R.reward_balancer, R.reward_tunnel];
-R.reward_belt_reader_and_display = [R.reward_belt_reader, R.reward_display];
 R.reward_shape_swapper_and_rotater_180 = [R.reward_shape_swapper, R.reward_rotater_180];
 
 // constant
@@ -85,39 +84,61 @@ TRANSLATIONS["en"] = {
         },
     },
     storyRewards: {
-        reward_x_miner: {
-            title: "X-miner",
-            desc: "Congrats! You have unlocked the <strong>X-shape miner </strong>. It can mine shape into the <strong>X-shape </strong>.",
+        reward_painter: {
+            title: "New Painting",
+            desc: "The <strong>painter</strong> has been unlocked \
+            - Extract some color veins (just as you do with shapes) and combine it with a shape in the painter to color them!<br><br>\
+            PS: You can mix colors by <strong>painting multiple times</strong>.",
         },
-        reward_shape_swapper: {
-            title: "shape swapper",
-            desc: "Congrats! You unlocked the <strong> Shape exchanger </strong>. It swaps the right half of the input <strong> shape </strong>.",
+        reward_x_miner: {
+            title: "New Shape: X-shape",
+            desc: "Congrats! You have unlocked the <strong>X-Extractor</strong>. It can mine shape into the <strong>X-shape</strong>.",
+        },
+        reward_shape_swapper: {  // shadow by reward_shape_swapper_and_rotater_180
+            title: "Swap two shapes",
+            desc: "Congrats! You unlocked the <strong>Shape Swapper</strong>. It swaps the right half of two input <strong>shapes</strong>.",
         },
         reward_redprints: {
-            title: "Redprints",
-            desc: "You can now deliver<strong>other shapes</strong>(shapes outside these targets) to the center hub! But it will consume your redprint\
-            and you need to create a redprint to afford it! (Those you just delivered).",
+            title: "Redprints: Destroy wastes",
+            desc: "You can now deliver <strong>other shapes</strong> (shapes other than the target) to the center hub! \
+            But it will consume your redprint and you need to create a redprint to afford it! (Those you just delivered).",
         },
         reward_x_blueprints: {
             title: "New Blueprints",
-            desc: "You can now <strong>copy and paste</strong> parts of your factory! Select an area (Hold CTRL, then drag with your mouse), and press 'C' to copy it.<br><br>Pasting it is\
-            <strong>not free</strong>, you need to produce <strong>blueprint shapes</strong> to afford it! (Those you just delivered).",
+            desc: "Things can go wrong. The blueprints you delivered earlier are invalid. \
+            But don't worry, delivering new blueprint can solve this problem.",
+        },
+        reward_prioritizer: {
+            title: "Prioritize Input",
+            desc: "Congrats! You have unlocked the <strong>Prioritizer</strong>\
+            - It prioritizes the input <strong>from the bottom</strong>, so you can make a <strong>throttle</strong> with it.\
+            It is very useful in factories with ring belts.",
+        },
+        reward_filter_swap: {
+            title: "Swap Filter",
+            desc: "Congrats! You have unlocked the <strong>Swap Filter</strong>\
+            - It will filter out</strong> non-swapable shapes <strong>. \
+            You can connect them <strong>in parallel</strong>, so that the waste can be passed along the right side.\
+            It's very useful in automated factories.",
         },
         [R.reward_balancer_and_tunnel]: {
-            title: "reward_balancer_and_tunnel",
-            desc: "reward_balancer_and_tunnel",
+            title: "Balancer & Tunnel",
+            desc: "The multifunctional <strong>balancer</strong> and <strong>tunnel</strong> have been unlocked\
+            - It can be used to build bigger factories by <strong>splitting, merging and tunnelling</strong> items!",
         },
         [R.reward_shape_swapper_and_rotater_180]: {
-            title: "reward_shape_swapper_and_rotater_180",
-            desc: "reward_shape_swapper_and_rotater_180",
+            title: "Swap two shapes",
+            desc: "Congrats! You unlocked the <strong>Shape Swapper</strong>\
+            - It swaps the right half of two input <strong>shapes</strong>.\
+            At the same time, you are allowed to rotate a shape by 180 degrees.",
         },
         [R.reward_levers_and_filter]: {
-            title: "reward_levers_and_filter",
-            desc: "reward_levers_and_filter",
-        },
-        [R.reward_belt_reader_and_display]: {
-            title: "reward_belt_reader_and_display",
-            desc: "reward_belt_reader_and_display",
+            title: "Wires & Lever & Filter",
+            desc: "You just unlocked the <strong>Wires Layer</strong>: \
+            It is a separate layer on top of the regular layer and introduces a lot of new mechanics!<br><br>\
+            For the beginning I unlocked you the <strong>Item Filter</strong> \
+            - It will route items either to the top or the right output depending on the signal from the wires layer.<br><br>\
+            To switch to the wires layer, press <strong>E</strong>. <br><br>",
         },
     },
 };
@@ -144,34 +165,73 @@ TRANSLATIONS["zh-CN"] = {
         prioritizer: {
             default: {
                 name: "优先器",
-                description: "优先接收底部的输入。"
+                description: "优先从底部</strong>输入。"
             },
         },
         filter: {
             swap_filter: {
                 name: "交换过滤器",
-                description: "过滤出不能交换的图形。"
+                description: "过滤出不可交换的图形。"
             }
         },
     },
     storyRewards: {
+        reward_painter: {
+            title: "新·上色",
+            desc: "恭喜！您解锁了<strong>上色器</strong>。\
+            开采一些颜色（就像您开采图形一样），将其在上色器中与图形结合来将图形上色！\
+            注意: 您可以通过<strong>多次上色</strong>来混合颜色。",
+        },
         reward_x_miner: {
-            title: "X型-开采器",
-            desc: "恭喜！您解锁了<strong>X形状开采器</strong>。它能将普通矿开采出<strong>X形状</strong>。",
+            title: "新形状：X图形",
+            desc: "恭喜！您解锁了<strong>X型-开采器</strong>。\
+            它能将普通矿开采出<strong>X形状</strong>。",
         },
         reward_shape_swapper: {
-            title: "交换器",
-            desc: "恭喜！您解锁了<strong>形状交换器</strong>。它会将将输入的<strong>图形</strong>的右半部分交换。",
+            title: "图形交换",
+            desc: "恭喜！您解锁了<strong>形状交换器</strong>。\
+            它会将将输入的<strong>图形</strong>的右半部分交换。",
         },
         reward_redprints: {
-            title: "红图",
-            desc: "您现在可以交付<strong>其它图形</strong>（目标以外的图形）到中心了！但是代价就是会<strong>消耗</strong>您的<strong>红图图形</strong>。\
+            title: "红图：销毁废弃图形",
+            desc: "您现在可以交付<strong>其它图形</strong>（目标以外的图形）到中心了！\
+            但是代价就是会<strong>消耗</strong>您的<strong>红图图形</strong>。\
             您需要制造<strong>红图图形</strong>来负担。红图图形是您刚刚交付的图形。",
         },
         reward_x_blueprints: {
             title: "新蓝图",
-            desc: "您现在可以<strong>复制粘贴</strong>您的工厂的一部分了！按住 CTRL 键并拖动鼠标来选择一块区域，然后按 C 键复制。\
-            <br><br>粘贴并<strong>不是免费的</strong>，您需要制造<strong>蓝图图形</strong>来负担。蓝图图形是您刚刚交付的图形。",
+            desc: "天有不测风云。您之前交付的蓝图图形都失效了。\
+            但别担心，交付新的蓝图图形可以解决这个问题。",
+        },
+        reward_prioritizer: {
+            title: "优先器",
+            desc: "恭喜！您已经解锁了<strong>优先器</strong>。\
+            它将<strong>优先从底部</strong>输入，这样您就可以用它做一个<strong>节流门</strong>了。\
+            它在有环路的工厂中十分有用。",
+        },
+        reward_filter_swap: {
+            title: "交换过滤器",
+            desc: "恭喜！您已经解锁了<strong>交换过滤器</strong>。\
+            它将过滤出<strong>不可交换的</strong>图形。\
+            您可以将它们<strong>并联</strong>起来，使得废品可以沿右侧传递。\
+            它在打造自动化工厂时十分有用。",
+        },
+        [R.reward_balancer_and_tunnel]: {
+            title: "平衡器 & 隧道",
+            desc: "恭喜！您解锁了多功能<strong>平衡器</strong>和<strong>隧道</strong>。\
+            它能够<strong>分割、合并、运送</strong>多个传送带的资源，可以用来建造更大的工厂！",
+        },
+        [R.reward_shape_swapper_and_rotater_180]: {
+            title: "图形交换",
+            desc: "恭喜你！您已解锁<strong>交换器</strong>。\
+            它能交换两个输入图形的<strong>右半部分</strong>。\
+            同时，您可以将图形旋转180度。",
+        },
+        [R.reward_levers_and_filter]: {
+            title: "电线 & 开关 & 过滤器",
+            desc: "恭喜！您解锁了<strong>电线层</strong>：它是正常层之上的一个层，它将带来了许多新的机制！<br><br>\
+            首先我解锁了您的<strong>物品过滤器</strong>，它会根据在电线层上输入的信号决定是从上面还是右边输出物品。\
+            按<strong>E</strong>键切换到电线层，然后用电线连接到槽，用开关来控制开启。<br><br>",
         },
     },
 };
