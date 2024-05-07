@@ -239,6 +239,273 @@ TRANSLATIONS["zh-CN"] = {
 
 // ############################
 
+function getLevels() {  // 关卡
+    const LevelsForVariant = [
+    // 1
+    {
+        shape: "RuRuRuRu",
+        required: 10,
+        reward: R.reward_painter,  // color
+    },
+    // 2
+    {
+        shape: "RbRbRbRb",
+        required: 40,
+        reward: R.reward_balancer_and_tunnel,
+    },
+    // 3
+    {
+        shape: "RpRpRpRp",
+        required: 200,
+        reward: R.reward_shape_swapper_and_rotater_180,  // swapper
+    },
+    // 4
+    {
+        shape: "RwRwRpRp",
+        required: 400,
+        reward: R.reward_rotater,  // angle
+    },
+    // 5
+    {
+        shape: "RbRbRbRw",
+        required: 800,
+        reward: R.reward_blueprints,  // blueprint
+    },
+    // 6
+    {
+        shape: "RrRgRrRg",
+        required: 1200,
+        reward: R.reward_rotater_ccw,
+    },
+    // 7 微软
+    {
+        shape: "RgRyRbRr",
+        required: 2000,
+        reward: R.reward_x_miner,  // X-shape
+    },
+    // 8 X矿 4
+    {
+        shape: "1u2u1u2u1u2u1u2u",
+        required: 100,
+        reward: R.reward_merger,
+    },
+    // 9 绿灰方块 4
+    {
+        shape: "1g2g1g2g1u2u1u2u",
+        required: 200,
+        reward: R.reward_underground_belt_tier_2,
+    },
+    // 10 青灰蝴蝶 4
+    {
+        shape: "1c2c1c2c2u1u2u1u",
+        required: 400,
+        reward: R.reward_splitter,
+    },
+    // 11 黄白魔方 4
+    {
+        shape: "1w2w2y1y1w2w2y1y",
+        required: 800,
+        reward: R.reward_belt_reader,
+    },
+    // 12 白色幽灵 4
+    {
+        shape: "1w1w2w2w2w2w1w1w",
+        required: 1200,
+        reward: R.reward_prioritizer,
+    },
+    // 13 红图 6
+    {
+        shape: "--2r2r2r2r2r2r",
+        required: 6,
+        reward: R.reward_redprints,  // redprint
+        throughputOnly: true,
+    },
+    // 14 蓝图 1
+    {
+        shape: "1b1b1b1b1b1b1b1b1b1b2b",
+        required: 2000,
+        reward: R.reward_x_blueprints,  // blueprint
+    },
+    // 15 拼图 4
+    {
+        shape: "1p1u2u2b1b2r1r2p",
+        required: 4000,
+        reward: R.reward_levers_and_filter,
+    },
+    // 16 LOGO 5
+    {
+        shape: "1w2u1w2w2u2u2w",
+        required: 6000,
+        reward: R.reward_display,
+    },
+    // 17 红包 4
+    {
+        shape: "1y2y1r2r1r2r1r2y",
+        required: 8000,
+        reward: R.reward_constant_signal,
+    },
+    // 18 UFO 2
+    {
+        shape: "1w1w1w1w2p1p1p1p2p1w",
+        required: 10000,
+        reward: R.reward_filter_swap,
+    },
+    // 19 指南针 2
+    {
+        shape: "1w2b1w1w1w1w2r1w1w1w",
+        required: 12000,
+        reward: R.reward_storage,
+    },
+    // 20 色盘 0
+    {
+        shape: "1r1y1y1g1g1c1c1b1b1p1p1r",
+        required: 150,
+        reward: R.reward_virtual_processing,
+        throughputOnly: true,
+    },
+    // 21 粽子 3
+    {
+        shape: "--1g1g2g1g1g2g1g1g2y",
+        required: 14000,
+        reward: R.reward_logic_gates,
+    },
+    // 22 EVA 5
+    {
+        shape: "--1g2p2g2p1g2p2p",
+        required: 16000,
+        reward: R.reward_freeplay,
+    },
+    ];
+
+    // const difficulty = 1;
+    // LevelsForVariant.forEach((level) => {
+    //     if (!level.throughputOnly) {
+    //         level.required *= difficulty;
+    //     }
+    // });
+    return LevelsForVariant;
+}
+
+function getUpgrades() {  // 升级
+    // 1-5-10--20 upgrade
+    // 1-5-7.5-10 speed
+    const fixedImprovements = [];
+    const numFixedUpgrades = 4;
+    const numExtraUpgrades = 15;
+    const numTotalUpgrades = 20;
+
+    for (let i = 1; i < numTotalUpgrades; ++i) {
+        if (i < 5) {  // 1 + numFixedUpgrades
+            fixedImprovements.push(1);
+        } else if (i < 10) {
+            fixedImprovements.push(0.5);
+        } else {
+            fixedImprovements.push(0.25);
+        }
+    }
+
+    function generateEndgameUnlocks() {
+        return new Array(numExtraUpgrades).fill(null).map((_, i) => {
+            switch (i) {
+                case 0:
+                    return {
+                        required: [{ shape: m1, amount: 1200 }],
+                        excludePrevious: true,
+                    };
+                case 1:
+                    return {
+                        required: [{ shape: m1, amount: 2000 }, { shape: m2, amount: 3000 },],
+                        excludePrevious: true,
+                    };
+                default:
+                    return {
+                        required: [
+                            { shape: m1, amount: 2000 + (i-1) * 800 },
+                            { shape: m2, amount: 3000 + (i-1) * 1000 },
+                            { shape: m3, amount: 4000 + (i-2) * 1200 },
+                        ],
+                        excludePrevious: true,
+                    };
+            }
+        });
+    }
+
+    const upgrades = {
+        belt: [
+            { required: [{ shape: "RuRuRuRu", amount: 100 }], },
+            { required: [{ shape: "RwRuRuRu", amount: 300 }], },
+            { required: [{ shape: "1u2w1u1u1u1u2u1u1u1u", amount: 2000 }], },
+            { required: [{ shape: "1u2w1u1u1w2u2u1w1u", amount: 5000 }], },
+            ...generateEndgameUnlocks(),
+        ],
+        miner: [
+            { required: [{ shape: "RbRbRbRb", amount: 200 }], },
+            { required: [{ shape: "RwRbRbRw", amount: 600 }], },
+            { required: [{ shape: "1w1w1w1w2b1b2b1w1w1w", amount: 2000 }], },
+            { required: [{ shape: "1w1w2y2b1b2b1w1w1w", amount: 5000 }], },
+            ...generateEndgameUnlocks(),
+        ],
+        processors: [
+            { required: [{ shape: "RgRgRcRc", amount: 300 }], },
+            { required: [{ shape: "RcRuRcRg", amount: 900 }], },
+            { required: [{ shape: "1g1g2c2c2c1g1g1g1g", amount: 2000 }], },
+            { required: [{ shape: "1g2c2u2u2c1g1g1g", amount: 5000 }], },
+            ...generateEndgameUnlocks(),
+        ],
+        painting: [
+            { required: [{ shape: "RpRpRpRp", amount: 400 }], },
+            { required: [{ shape: "RwRpRwRp", amount: 1200 }], },
+            { required: [{ shape: "1p2w1p2w1p2w1p2w", amount: 2000, }], },
+            { required: [{ shape: "1r2w1p1r2w1p1r2w1p", amount: 5000 }], },
+            ...generateEndgameUnlocks(),
+        ],
+    };
+
+    const difficulty = 1;
+    const tierGrowth = 2;
+
+    // Automatically generate tier levels
+    for (const upgradeId in upgrades) {
+        const upgradeTiers = upgrades[upgradeId];
+
+        let currentTierRequirements = [];
+        for (let i = 0; i < upgradeTiers.length; ++i) {
+            const tierHandle = upgradeTiers[i];
+            tierHandle.improvement = fixedImprovements[i];
+
+            tierHandle.required.forEach(required => {
+                required.amount = Math.round(required.amount * difficulty);
+            });
+            const originalRequired = tierHandle.required.slice();
+
+            // add previous required
+            if (!tierHandle.excludePrevious) {
+                for (let k = currentTierRequirements.length - 1; k >= 0; --k) {
+                    const oldTierRequirement = currentTierRequirements[k];
+                    tierHandle.required.unshift({
+                        shape: oldTierRequirement.shape,
+                        amount: oldTierRequirement.amount,
+                    });
+                }
+            }
+
+            // update for next tier
+            currentTierRequirements.push(
+                ...originalRequired.map(req => ({
+                    amount: req.amount,
+                    shape: req.shape,
+                }))
+            );
+            currentTierRequirements.forEach(tier => {
+                tier.amount = tier.amount * tierGrowth;
+            });
+        }
+    }
+    return upgrades;
+}
+
+// ############################
+
 // const logger = $.createLogger("SQ-X");
 const logger = {log:()=>{}};
 
@@ -2309,270 +2576,6 @@ FilterSystem: ({ $super, $old }) => ({
 
 // ############################
 
-function getLevels() {  // 关卡
-    const LevelsForVariant = [
-    // 1
-    {
-        shape: "RuRuRuRu",
-        required: 10,
-        reward: R.reward_painter,  // color
-    },
-    // 2
-    {
-        shape: "RbRbRbRb",
-        required: 40,
-        reward: R.reward_balancer_and_tunnel,
-    },
-    // 3
-    {
-        shape: "RpRpRpRp",
-        required: 200,
-        reward: R.reward_shape_swapper_and_rotater_180,  // swapper
-    },
-    // 4
-    {
-        shape: "RwRwRpRp",
-        required: 400,
-        reward: R.reward_rotater,  // angle
-    },
-    // 5
-    {
-        shape: "RbRbRbRw",
-        required: 800,
-        reward: R.reward_blueprints,  // blueprint
-    },
-    // 6
-    {
-        shape: "RrRgRrRg",
-        required: 1200,
-        reward: R.reward_rotater_ccw,
-    },
-    // 7 微软
-    {
-        shape: "RgRyRbRr",
-        required: 2000,
-        reward: R.reward_x_miner,  // X-shape
-    },
-    // 8 X矿 4
-    {
-        shape: "1u2u1u2u1u2u1u2u",
-        required: 100,
-        reward: R.reward_merger,
-    },
-    // 9 绿灰方块 4
-    {
-        shape: "1g2g1g2g1u2u1u2u",
-        required: 200,
-        reward: R.reward_underground_belt_tier_2,
-    },
-    // 10 青灰蝴蝶 4
-    {
-        shape: "1c2c1c2c2u1u2u1u",
-        required: 400,
-        reward: R.reward_splitter,
-    },
-    // 11 黄白魔方 4
-    {
-        shape: "1w2w2y1y1w2w2y1y",
-        required: 800,
-        reward: R.reward_belt_reader,
-    },
-    // 12 白色幽灵 4
-    {
-        shape: "1w1w2w2w2w2w1w1w",
-        required: 1200,
-        reward: R.reward_prioritizer,
-    },
-    // 13 红图 6
-    {
-        shape: "--2r2r2r2r2r2r",
-        required: 6,
-        reward: R.reward_redprints,  // redprint
-        throughputOnly: true,
-    },
-    // 14 蓝图 1
-    {
-        shape: "1b1b1b1b1b1b1b1b1b1b2b",
-        required: 2000,
-        reward: R.reward_x_blueprints,  // blueprint
-    },
-    // 15 拼图 4
-    {
-        shape: "1p1u2u2b1b2r1r2p",
-        required: 4000,
-        reward: R.reward_levers_and_filter,
-    },
-    // 16 LOGO 5
-    {
-        shape: "1w2u1w2w2u2u2w",
-        required: 6000,
-        reward: R.reward_display,
-    },
-    // 17 红包 4
-    {
-        shape: "1y2y1r2r1r2r1r2y",
-        required: 8000,
-        reward: R.reward_constant_signal,
-    },
-    // 18 UFO 2
-    {
-        shape: "1w1w1w1w2p1p1p1p2p1w",
-        required: 10000,
-        reward: R.reward_filter_swap,
-    },
-    // 19 指南针 2
-    {
-        shape: "1w2b1w1w1w1w2r1w1w1w",
-        required: 12000,
-        reward: R.reward_storage,
-    },
-    // 20 色盘 0
-    {
-        shape: "1r1y1y1g1g1c1c1b1b1p1p1r",
-        required: 150,
-        reward: R.reward_virtual_processing,
-        throughputOnly: true,
-    },
-    // 21 粽子 3
-    {
-        shape: "--1g1g2g1g1g2g1g1g2y",
-        required: 14000,
-        reward: R.reward_logic_gates,
-    },
-    // 22 EVA 5
-    {
-        shape: "--1g2p2g2p1g2p2p",
-        required: 16000,
-        reward: R.reward_freeplay,
-    },
-    ];
-
-    // const difficulty = 1;
-    // LevelsForVariant.forEach((level) => {
-    //     if (!level.throughputOnly) {
-    //         level.required *= difficulty;
-    //     }
-    // });
-    return LevelsForVariant;
-}
-
-function getUpgrades() {  // 升级
-    // 1-5-10--20 upgrade
-    // 1-5-7.5-10 speed
-    const fixedImprovements = [];
-    const numFixedUpgrades = 4;
-    const numExtraUpgrades = 15;
-    const numTotalUpgrades = 20;
-
-    for (let i = 1; i < numTotalUpgrades; ++i) {
-        if (i < 5) {  // 1 + numFixedUpgrades
-            fixedImprovements.push(1);
-        } else if (i < 10) {
-            fixedImprovements.push(0.5);
-        } else {
-            fixedImprovements.push(0.25);
-        }
-    }
-
-    function generateEndgameUnlocks() {
-        return new Array(numExtraUpgrades).fill(null).map((_, i) => {
-            switch (i) {
-                case 0:
-                    return {
-                        required: [{ shape: m1, amount: 1200 }],
-                        excludePrevious: true,
-                    };
-                case 1:
-                    return {
-                        required: [{ shape: m1, amount: 2000 }, { shape: m2, amount: 3000 },],
-                        excludePrevious: true,
-                    };
-                default:
-                    return {
-                        required: [
-                            { shape: m1, amount: 2000 + (i-1) * 800 },
-                            { shape: m2, amount: 3000 + (i-1) * 1000 },
-                            { shape: m3, amount: 4000 + (i-2) * 1200 },
-                        ],
-                        excludePrevious: true,
-                    };
-            }
-        });
-    }
-
-    const upgrades = {
-        belt: [
-            { required: [{ shape: "RuRuRuRu", amount: 100 }], },
-            { required: [{ shape: "RwRuRuRu", amount: 300 }], },
-            { required: [{ shape: "1u2w1u1u1u1u2u1u1u1u", amount: 2000 }], },
-            { required: [{ shape: "1u2w1u1u1w2u2u1w1u", amount: 5000 }], },
-            ...generateEndgameUnlocks(),
-        ],
-        miner: [
-            { required: [{ shape: "RbRbRbRb", amount: 200 }], },
-            { required: [{ shape: "RwRbRbRw", amount: 600 }], },
-            { required: [{ shape: "1w1w1w1w2b1b2b1w1w1w", amount: 2000 }], },
-            { required: [{ shape: "1w1w2y2b1b2b1w1w1w", amount: 5000 }], },
-            ...generateEndgameUnlocks(),
-        ],
-        processors: [
-            { required: [{ shape: "RgRgRcRc", amount: 300 }], },
-            { required: [{ shape: "RcRuRcRg", amount: 900 }], },
-            { required: [{ shape: "1g1g2c2c2c1g1g1g1g", amount: 2000 }], },
-            { required: [{ shape: "1g2c2u2u2c1g1g1g", amount: 5000 }], },
-            ...generateEndgameUnlocks(),
-        ],
-        painting: [
-            { required: [{ shape: "RpRpRpRp", amount: 400 }], },
-            { required: [{ shape: "RwRpRwRp", amount: 1200 }], },
-            { required: [{ shape: "1p2w1p2w1p2w1p2w", amount: 2000, }], },
-            { required: [{ shape: "1r2w1p1r2w1p1r2w1p", amount: 5000 }], },
-            ...generateEndgameUnlocks(),
-        ],
-    };
-
-    const difficulty = 1;
-    const tierGrowth = 2;
-
-    // Automatically generate tier levels
-    for (const upgradeId in upgrades) {
-        const upgradeTiers = upgrades[upgradeId];
-
-        let currentTierRequirements = [];
-        for (let i = 0; i < upgradeTiers.length; ++i) {
-            const tierHandle = upgradeTiers[i];
-            tierHandle.improvement = fixedImprovements[i];
-
-            tierHandle.required.forEach(required => {
-                required.amount = Math.round(required.amount * difficulty);
-            });
-            const originalRequired = tierHandle.required.slice();
-
-            // add previous required
-            if (!tierHandle.excludePrevious) {
-                for (let k = currentTierRequirements.length - 1; k >= 0; --k) {
-                    const oldTierRequirement = currentTierRequirements[k];
-                    tierHandle.required.unshift({
-                        shape: oldTierRequirement.shape,
-                        amount: oldTierRequirement.amount,
-                    });
-                }
-            }
-
-            // update for next tier
-            currentTierRequirements.push(
-                ...originalRequired.map(req => ({
-                    amount: req.amount,
-                    shape: req.shape,
-                }))
-            );
-            currentTierRequirements.forEach(tier => {
-                tier.amount = tier.amount * tierGrowth;
-            });
-        }
-    }
-    return upgrades;
-}
 
 function checkRequirements_hub({entity, item, slotIndex}) {  // 交付限制: 检查交付物品
     // logger.log("checkRequirements_hub(", this, entity, item, slotIndex, ")");
