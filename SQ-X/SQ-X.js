@@ -2353,77 +2353,77 @@ function getLevels() {  // 关卡
         required: 2000,
         reward: R.reward_x_miner,  // X-shape
     },
-    // 8 4
+    // 8 X矿 4
     {
         shape: "1u2u1u2u1u2u1u2u",
         required: 100,
         reward: R.reward_merger,
     },
-    // 9 4
+    // 9 绿灰方块 4
+    {
+        shape: "1g2g1g2g1u2u1u2u",
+        required: 200,
+        reward: R.reward_underground_belt_tier_2,
+    },
+    // 10 青灰蝴蝶 4
     {
         shape: "1c2c1c2c2u1u2u1u",
         required: 400,
-        reward: R.reward_underground_belt_tier_2,
+        reward: R.reward_splitter,
     },
-    // 10 4
+    // 11 黄白魔方 4
     {
         shape: "1w2w2y1y1w2w2y1y",
         required: 800,
-        reward: R.reward_splitter,
+        reward: R.reward_belt_reader,
     },
-    // 11 4
+    // 12 白色幽灵 4
     {
         shape: "1w1w2w2w2w2w1w1w",
         required: 1200,
         reward: R.reward_prioritizer,
     },
-    // 12 红图 6
+    // 13 红图 6
     {
         shape: "--2r2r2r2r2r2r",
         required: 6,
         reward: R.reward_redprints,  // redprint
         throughputOnly: true,
     },
-    // 13 蓝图 1
+    // 14 蓝图 1
     {
         shape: "1b1b1b1b1b1b1b1b1b1b2b",
         required: 2000,
         reward: R.reward_x_blueprints,  // blueprint
     },
-    // 14 拼图 4
+    // 15 拼图 4
     {
         shape: "1p1u2u2b1b2r1r2p",
         required: 4000,
         reward: R.reward_levers_and_filter,
     },
-    // 15 LOGO 5
+    // 16 LOGO 5
     {
         shape: "1w2u1w2w2u2u2w",
         required: 6000,
-        reward: R.reward_belt_reader_and_display,
+        reward: R.reward_display,
     },
-    // 18 红包 4
+    // 17 红包 4
     {
         shape: "1y2y1r2r1r2r1r2y",
         required: 8000,
         reward: R.reward_constant_signal,
     },
-    // 16  2
+    // 18 UFO 2
     {
         shape: "1w1w1w1w2p1p1p1p2p1w",
         required: 10000,
-        reward: R.no_reward,
-    },
-    // 17 衣 4
-    {
-        shape: "1u1r2r2u1r2u2r1r",
-        required: 12000,
-        reward: R.reward_painter_double,
+        reward: R.reward_filter_swap,
     },
     // 19 指南针 2
     {
         shape: "1w2b1w1w1w1w2r1w1w1w",
-        required: 14000,
+        required: 12000,
         reward: R.reward_storage,
     },
     // 20 色盘 0
@@ -2436,19 +2436,13 @@ function getLevels() {  // 关卡
     // 21 粽子 3
     {
         shape: "--1g1g2g1g1g2g1g1g2y",
-        required: 16000,
+        required: 14000,
         reward: R.reward_logic_gates,
     },
     // 22 EVA 5
     {
         shape: "--1g2p2g2p1g2p2p",
-        required: 18000,
-        reward: R.reward_filter_swap,
-    },
-    // 23 火箭 4
-    {
-        shape: "2w1u1w2w2r2w1w1u",
-        required: 20000,
+        required: 16000,
         reward: R.reward_freeplay,
     },
     ];
