@@ -46,11 +46,36 @@ const storageSize = 100;
 const PrioritizerComponentID = "Prioritizer";
 const MAX_ITEMS_IN_QUEUE_PRIORITIZER = 3;
 const MAX_ITEMS_IN_QUEUE_FILTER = 2;
+const REDPRINT_COST_PER_WASTED_SHAPE = 2;
 
 // ############################
 
 const TRANSLATIONS = {};
 TRANSLATIONS["en"] = {
+    keybindings: {
+        mappings: {
+            shape_swapper: "Shape Swapper (mod)",
+            prioritizer: "Prioritizer (mod)",
+        },
+    },
+    shopUpgrades: {
+        belt:{
+            name: "Belts, Distributor & Tunnels",
+            description: "Speed x<currentMult> → x<newMult>"
+        },
+        miner:{
+            name: "Extraction",
+            description: "Speed x<currentMult> → x<newMult>"
+        },
+        processors:{
+            name: "Swapping & Rotating",
+            description: "Speed x<currentMult> → x<newMult>"
+        },
+        painting:{
+            name: "Painting",
+            description: "Speed x<currentMult> → x<newMult>"
+        },
+    },
     buildings: {
         shape_swapper: {
             default: {
@@ -92,20 +117,22 @@ TRANSLATIONS["en"] = {
         },
         reward_x_miner: {
             title: "New Shape: X-shape",
-            desc: "Congrats! You have unlocked the <strong>X-Extractor</strong>. It can mine shape into the <strong>X-shape</strong>.",
+            desc: "Congrats! You have unlocked the <strong>X-Extractor</strong>\
+            - It can mine shape into the <strong>X-shape</strong>.",
         },
         reward_shape_swapper: {  // shadow by reward_shape_swapper_and_rotater_180
             title: "Swap two shapes",
-            desc: "Congrats! You unlocked the <strong>Shape Swapper</strong>. It swaps the right half of two input <strong>shapes</strong>.",
+            desc: "Congrats! You unlocked the <strong>Shape Swapper</strong>\
+            - It swaps the right half of two input <strong>shapes</strong>.",
         },
         reward_redprints: {
             title: "Redprints: Destroy wastes",
-            desc: "You can now deliver <strong>other shapes</strong> (shapes other than the target) to the center hub! \
+            desc: "You can now deliver <strong>other shapes</strong> (shapes other than the target) to the center hub!<br><br>\
             But it will consume your redprint and you need to create a redprint to afford it! (Those you just delivered).",
         },
         reward_x_blueprints: {
             title: "New Blueprints",
-            desc: "Things can go wrong. The blueprints you delivered earlier are invalid. \
+            desc: "Things can go wrong. The blueprints you delivered earlier are invalid.<br><br>\
             But don't worry, delivering new blueprint can solve this problem.",
         },
         reward_prioritizer: {
@@ -117,7 +144,7 @@ TRANSLATIONS["en"] = {
         reward_filter_swap: {
             title: "Swap Filter",
             desc: "Congrats! You have unlocked the <strong>Swap Filter</strong>\
-            - It will filter out</strong> non-swapable shapes <strong>. \
+            - It will filter out</strong> non-swapable shapes <strong>.<br><br>\
             You can connect them <strong>in parallel</strong>, so that the waste can be passed along the right side.\
             It's very useful in automated factories.",
         },
@@ -129,7 +156,7 @@ TRANSLATIONS["en"] = {
         [R.reward_shape_swapper_and_rotater_180]: {
             title: "Swap two shapes",
             desc: "Congrats! You unlocked the <strong>Shape Swapper</strong>\
-            - It swaps the right half of two input <strong>shapes</strong>.\
+            - It swaps the right half of two input <strong>shapes</strong>.<br><br>\
             At the same time, you are allowed to rotate a shape by 180 degrees.",
         },
         [R.reward_levers_and_filter]: {
@@ -138,11 +165,35 @@ TRANSLATIONS["en"] = {
             It is a separate layer on top of the regular layer and introduces a lot of new mechanics!<br><br>\
             For the beginning I unlocked you the <strong>Item Filter</strong> \
             - It will route items either to the top or the right output depending on the signal from the wires layer.<br><br>\
-            To switch to the wires layer, press <strong>E</strong>. <br><br>",
+            To switch to the wires layer, press <strong>E</strong>.",
         },
     },
 };
 TRANSLATIONS["zh-CN"] = {
+    keybindings: {
+        mappings: {
+            shape_swapper: "交换器 (mod)",
+            prioritizer: "优先器 (mod)",
+        },
+    },
+    shopUpgrades: {
+        belt:{
+            name: "传送、分发、隧道",
+            description: "效率 <currentMult> 倍 → <newMult> 倍"
+        },
+        miner:{
+            name: "开采",
+            description: "效率 <currentMult> 倍 → <newMult> 倍"
+        },
+        processors:{
+            name: "交换、旋转",
+            description: "效率 <currentMult> 倍 → <newMult> 倍"
+        },
+        painting:{
+            name: "上色",
+            description: "效率 <currentMult> 倍 → <newMult> 倍"
+        },
+    },
     buildings: {
         shape_swapper: {
             default: {
@@ -179,7 +230,7 @@ TRANSLATIONS["zh-CN"] = {
         reward_painter: {
             title: "新·上色",
             desc: "恭喜！您解锁了<strong>上色器</strong>。\
-            开采一些颜色（就像您开采图形一样），将其在上色器中与图形结合来将图形上色！\
+            开采一些颜色（就像您开采图形一样），将其在上色器中与图形结合来将图形上色！<br><br>\
             注意: 您可以通过<strong>多次上色</strong>来混合颜色。",
         },
         reward_x_miner: {
@@ -194,13 +245,13 @@ TRANSLATIONS["zh-CN"] = {
         },
         reward_redprints: {
             title: "红图：销毁废弃图形",
-            desc: "您现在可以交付<strong>其它图形</strong>（目标以外的图形）到中心了！\
-            但是代价就是会<strong>消耗</strong>您的<strong>红图图形</strong>。\
+            desc: "您现在可以交付<strong>其它图形</strong>（目标以外的图形）到中心了！<br><br>\
+            但是代价就是会<strong>消耗</strong>您的<strong>红图图形</strong>。<br><br>\
             您需要制造<strong>红图图形</strong>来负担。红图图形是您刚刚交付的图形。",
         },
         reward_x_blueprints: {
             title: "新蓝图",
-            desc: "天有不测风云。您之前交付的蓝图图形都失效了。\
+            desc: "天有不测风云。您之前交付的蓝图图形都失效了。<br><br>\
             但别担心，交付新的蓝图图形可以解决这个问题。",
         },
         reward_prioritizer: {
@@ -212,7 +263,7 @@ TRANSLATIONS["zh-CN"] = {
         reward_filter_swap: {
             title: "交换过滤器",
             desc: "恭喜！您已经解锁了<strong>交换过滤器</strong>。\
-            它将过滤出<strong>不可交换的</strong>图形。\
+            它将过滤出<strong>不可交换的</strong>图形。<br><br>\
             您可以将它们<strong>并联</strong>起来，使得废品可以沿右侧传递。\
             它在打造自动化工厂时十分有用。",
         },
@@ -224,14 +275,14 @@ TRANSLATIONS["zh-CN"] = {
         [R.reward_shape_swapper_and_rotater_180]: {
             title: "图形交换",
             desc: "恭喜你！您已解锁<strong>交换器</strong>。\
-            它能交换两个输入图形的<strong>右半部分</strong>。\
+            它能交换两个输入图形的<strong>右半部分</strong>。<br><br>\
             同时，您可以将图形旋转180度。",
         },
         [R.reward_levers_and_filter]: {
             title: "电线 & 开关 & 过滤器",
             desc: "恭喜！您解锁了<strong>电线层</strong>：它是正常层之上的一个层，它将带来了许多新的机制！<br><br>\
             首先我解锁了您的<strong>物品过滤器</strong>，它会根据在电线层上输入的信号决定是从上面还是右边输出物品。\
-            按<strong>E</strong>键切换到电线层，然后用电线连接到槽，用开关来控制开启。<br><br>",
+            按<strong>E</strong>键切换到电线层，然后用电线连接到槽，用开关来控制开启。",
         },
     },
 };
@@ -377,7 +428,7 @@ function getLevels() {  // 关卡
     },
     ];
 
-    // const difficulty = 1;
+    // const difficulty = 0.1;
     // LevelsForVariant.forEach((level) => {
     //     if (!level.throughputOnly) {
     //         level.required *= difficulty;
@@ -580,6 +631,7 @@ class Mod extends $.Mod {
                 location: "primary",
                 metaClass: MetaShapeSwapperBuilding,
             });
+            $.KEYMAPPINGS.buildings.shape_swapper = { id: "shape_swapper", keyCode: $.keyToKeyCode("0") };  // same as trash
         }
 
         {  // 模拟交换机
@@ -624,6 +676,7 @@ class Mod extends $.Mod {
                 systemClass: PrioritizerSystem,
                 before: "end",
             });
+            $.KEYMAPPINGS.buildings.prioritizer = { id: "prioritizer", keyCode: $.keyToKeyCode("8") };  // same as mixer
         }
 
         {  // 交换过滤器
@@ -655,6 +708,17 @@ class Mod extends $.Mod {
                     },
                 }
             );
+        }
+
+        {  // 过关图片展示
+            const typed = x => x;
+            const R2C = $.enumHubGoalRewardsToContentUnlocked;
+            R2C[R.reward_x_miner] = typed([[$.MetaMinerBuilding, $.enumMinerVariants.x_miner]]);
+            R2C[R.reward_prioritizer] = typed([[MetaPrioritizerBuilding, defaultBuildingVariant]]);
+            R2C[R.reward_filter_swap] = typed([[$.MetaFilterBuilding, $.enumFilterVariants.swap_filter]]);
+            R2C[R.reward_levers_and_filter] = typed([[$.MetaLeverBuilding, defaultBuildingVariant]]);
+            R2C[R.reward_balancer_and_tunnel] = typed([[$.MetaBalancerBuilding, defaultBuildingVariant]]);
+            R2C[R.reward_shape_swapper_and_rotater_180] = typed([[MetaShapeSwapperBuilding, defaultBuildingVariant]]);
         }
 
         for (const Language in TRANSLATIONS) {
@@ -2594,7 +2658,7 @@ function checkRequirements_hub({entity, item, slotIndex}) {  // 交付限制: �
     entity.components.ItemAcceptor.slots[slotIndex].showDisableDDL = now + 1;
 
     if (this.root.gameMode.getRedprintShapeKey) {
-        return affordRedprint(this.root, 10);
+        return affordRedprint(this.root, REDPRINT_COST_PER_WASTED_SHAPE);
     } else {
         return false;
     }
